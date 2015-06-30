@@ -45,6 +45,8 @@ AccelStepper stepper_2(forwardstep_2, backwardstep_2);
 int ledPin = 5;
 int switchPin = 7;
 
+boolean is_debug_mode = false; //set debug mode here
+
 void setup() {
   Serial.begin(9600);
 
@@ -56,9 +58,9 @@ void setup() {
   TWBR = ((F_CPU / 400000l) - 16) / 2; // Change the i2c clock to 400KHz
 
   //NEMA 200-step stepper. Simulate top row
-  stepper_1.setSpeed(300.0);
+  stepper_1.setSpeed(300.0); //steps per second
   stepper_2.setSpeed(300.0);
-  
+
   Serial.flush();
 }
 
@@ -68,22 +70,41 @@ byte incoming_byte;
 
 void loop() {
 
-  if (Serial.available() > 0) {
+  if (!is_debug_mode) {
+    if (Serial.available() > 0) {
 
-    incoming_byte = Serial.read();
+      incoming_byte = Serial.read();
 
-    if (incoming_byte == 65) {
+      if (incoming_byte == 65) {
 
-      digitalWrite(ledPin, HIGH);
-      is_processing = true;
+        digitalWrite(ledPin, HIGH);
+        is_processing = true;
 
+      }
+      else if (incoming_byte == 66) {
+        digitalWrite(ledPin, LOW);
+        is_processing = false;
+        myStepper_1->release();
+        myStepper_2->release();
+
+      }
     }
-    else if (incoming_byte == 66) {
-      digitalWrite(ledPin, LOW);
-      is_processing = false;
-      myStepper_1->release();
-      myStepper_2->release();
+  }
 
+  if (is_debug_mode) {
+    if (digitalRead(switchPin) == HIGH) {
+
+      if (!is_processing) {
+        digitalWrite(ledPin, HIGH);
+        is_processing = true;
+      }
+    }       else {
+      if (is_processing) {
+        digitalWrite(ledPin, LOW);
+        is_processing = false;
+        myStepper_1->release();
+        myStepper_2->release();
+      }
     }
   }
 
